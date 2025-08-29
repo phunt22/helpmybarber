@@ -1,0 +1,16 @@
+[front_view]
+template = """
+Create a photorealistic portrait image of this exact person with a {haircut} haircut.
+Generate a new image showing the same person with the new hairstyle applied naturally.
+Keep all facial features, skin tone, expression, and overall appearance identical - only change the hair.
+"""
+
+[side_and_back_views]
+template = """
+Generate two images of this person with a {haircut} haircut.
+
+First image: side profile view showing the side of the head and haircut.
+Second image: back view showing the back of the head and haircut.
+
+Both images should show the same person with identical facial features and hairstyle, just from different angles.
+"""

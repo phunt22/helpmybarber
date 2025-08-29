@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import ImageUpload from '@/components/ImageUpload';
 import ResultsDisplay from '@/components/ResultsDisplay';
-import { ApiService } from '@/lib/api'; 
+import { ApiService, ImageVariation } from '@/lib/api'; 
 import {fileToBase64, compressImage} from '@/utils/imageCompression'
 
 const MAX_SIZE_BYTES = 0.5 * 1024 * 1024; // .5MB
@@ -11,9 +11,11 @@ const MAX_SIZE_BYTES = 0.5 * 1024 * 1024; // .5MB
 export default function Home() {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [result, setResult] = useState<string | null>(null);
+  const [results, setResults] = useState<ImageVariation[]>([]);
   const [loading, setLoading] = useState(false);
+  const [anglesLoading, setAnglesLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [prompt, setPrompt] = useState<string>('');
 
   const handleImageUpload = (imageDataUrl: string, file: File) => {
     // TODO support heic images
@@ -24,26 +26,27 @@ export default function Home() {
 
     setUploadedImage(imageDataUrl);
     setUploadedFile(file);
-    setResult(null);
+    setResults([]);
     setError(null);
+    setPrompt('');
   };
 
-  const handleGenerateReference = async (prompt: string) => {
+  const handleGenerateReference = async (promptText: string) => {
     if (!uploadedFile) return;
     setLoading(true);
     setError(null);
+    setPrompt(promptText);
 
-    console.log('original size', uploadedFile.size)
+
 
     let fileToProcess = uploadedFile;
 
     if(uploadedFile.size > MAX_SIZE_BYTES) {
-      console.log('compressing...')
+
       try {
         const compressedFile: File | null = await compressImage(uploadedFile, MAX_SIZE_BYTES * 0.9)
 
         if (!compressedFile) {
-          setLoading(false)
           setLoading(false)
           return;
         }
@@ -57,17 +60,17 @@ export default function Home() {
       }       
     }
 
-    console.log('second size', fileToProcess.size)
+
 
     try {
       const imageData = await fileToBase64(fileToProcess);
       const response = await ApiService.generateHaircuts({
-        prompt,
+        prompt: promptText,
         imageData,
       });
 
       if (response.success && response.variations.length > 0) {
-        setResult(response.variations[0]); // take the first (and only) result
+        setResults(response.variations);
       } else {
         setError(response.message || 'Failed to generate reference image');
       }
@@ -78,6 +81,44 @@ export default function Home() {
       setLoading(false);
     }
   };
+
+  const handleGenerateAngles = async () => {
+    if (!uploadedFile || !prompt) return;
+    setAnglesLoading(true);
+    setError(null);
+
+    try {
+      const imageData = await fileToBase64(uploadedFile);
+      const response = await ApiService.generateHaircuts({
+        prompt,
+        imageData,
+        generateAngles: true,
+      });
+
+      if (response.success && response.variations.length > 0) {
+        // Merge the new angle results (side & back) with existing front result
+        setResults(prev => [...prev, ...response.variations]);
+      } else {
+        setError(response.message || 'Failed to generate angle images');
+      }
+    } catch (error) {
+      console.error('Error generating angle images:', error);
+      setError('Failed to generate angle images. Please try again.');
+    } finally {
+      setAnglesLoading(false);
+    }
+  };
+
+
+
+
+
+
+
+
+  // Check if we have front result and no angles yet
+  const hasFrontResult = results.some(r => r.angle === 'front');
+  const hasAngles = results.some(r => r.angle === 'side' || r.angle === 'back');
 
   return (
     <div className="container">
@@ -201,7 +242,14 @@ export default function Home() {
           </div>
 
           <div>
-            <ResultsDisplay result={result} loading={loading} />
+            <ResultsDisplay 
+              results={results} 
+              loading={loading} 
+              hasFrontResult={hasFrontResult}
+              hasAngles={hasAngles}
+              anglesLoading={anglesLoading}
+              onGenerateAngles={handleGenerateAngles}
+            />
           </div>
         </div>
       )}

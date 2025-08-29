@@ -21,7 +21,7 @@ export const compressImage = async(imageFile: File, targetSize: number = 1024 * 
 
     const compressionNeeded = targetSize / imageFile.size;
     let quality = Math.min(0.8, compressionNeeded * 1.5)
-    let scale = compressionNeeded < 0.5 ? Math.sqrt(compressionNeeded * 2) : 1
+    const scale = compressionNeeded < 0.5 ? Math.sqrt(compressionNeeded * 2) : 1
     const compress = (q: number, s: number) => new Promise<File>((resolve) => {
         const canvas = document.createElement('canvas')
         const ctx = canvas.getContext('2d')

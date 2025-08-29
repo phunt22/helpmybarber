@@ -1,11 +1,17 @@
 export interface GenerateHaircutsRequest {
     prompt: string;
     imageData: string;
+    generateAngles?: boolean;
+}
+
+export interface ImageVariation {
+    image: string;
+    angle: string;
 }
 
 export interface GenerateHaircutsResponse {
     success: boolean;
-    variations: string[];
+    variations: ImageVariation[];
     message?: string;
 }
 

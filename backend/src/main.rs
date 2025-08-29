@@ -1,5 +1,5 @@
 use axum::{
-    extract::Json,
+    extract::{Json, DefaultBodyLimit},
     http::StatusCode,
     routing::{get, post},
     Router,
@@ -10,17 +10,23 @@ use std::net::SocketAddr;
 use base64::{Engine as _, engine::general_purpose};
 
 mod services;
+use services::gemini::ImageVariation;
+use services::prompts::Prompts;
+use std::sync::Arc;
 
 #[tokio::main]
 async fn main() {
     // Load environment variables from .env file
     dotenv::dotenv().ok();
 
+    let prompts = Arc::new(Prompts::load().expect("Failed to load prompts.toml"));
+
     let app = Router::new()
         .route("/", get(|| async { "Hello, World!" }))
         .route("/health", get(health_check))
         .route("/api/generate", post({
-            move |body| generate_haircut_image(body)
+            let prompts_clone = Arc::clone(&prompts);
+            move |body| generate_haircut_image(body, prompts_clone)
         }))
         .layer(DefaultBodyLimit::max(3 * 1024 * 1024)) // 3MB, output images generally are 2MB
         .layer(CorsLayer::permissive());
@@ -49,7 +55,7 @@ async fn main() {
 #[derive(Debug, Serialize)]
 struct GenerateResponse {
     success: bool,
-    variations: Vec<String>,
+    variations: Vec<ImageVariation>,
     message: Option<String>,
 }
 
@@ -58,6 +64,8 @@ struct GenerateRequest {
     prompt: String,
     #[serde(rename = "imageData")]
     image_data: String, // base64 encoded
+    #[serde(rename = "generateAngles", default)]
+    generate_angles: bool,
 }
 
 async fn health_check() -> &'static str {
@@ -67,6 +75,7 @@ async fn health_check() -> &'static str {
 
 async fn generate_haircut_image(
     Json(request): Json<GenerateRequest>,
+    prompts: Arc<Prompts>,
 ) -> Result<Json<GenerateResponse>, (StatusCode, Json<GenerateResponse>)> {
     let image_data = match general_purpose::STANDARD.decode(&request.image_data) {
         Ok(data) => data,
@@ -83,11 +92,13 @@ async fn generate_haircut_image(
         }
     };
 
-    let image_urls = match services::gemini::generate_haircut_images(
+    let image_variations = match services::gemini::generate_haircut_images(
         &request.prompt,
         &image_data,
+        request.generate_angles,
+        &prompts,
     ).await {
-        Ok(urls) => urls,
+        Ok(variations) => variations,
         Err(error) => {
             eprintln!("Gemini API error: {}", error);
             return Err((
@@ -103,7 +114,7 @@ async fn generate_haircut_image(
 
     Ok(Json(GenerateResponse {
         success: true,
-        variations: image_urls,
+        variations: image_variations,
         message: None,
     }))
 }

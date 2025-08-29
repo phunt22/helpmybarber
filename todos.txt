@@ -1,0 +1,10 @@
+- increase consistency between front, side, back views
+   - generate them all together?
+- improve UI
+- handle edge cases like no people, harmful content, etc.
+- usage/error metrics
+- accounts, ability to save? 
+  - lowk dont want to do that
+- helpmybarber.com domain
+- deploy project
+- run ads to break even?
