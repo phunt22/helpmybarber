@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import ImageUpload from '@/components/ImageUpload';
 import ResultsDisplay from '@/components/ResultsDisplay';
-import { ApiService, fileToBase64 } from '@/lib/api'; 
+import { ApiService, compressImage, fileToBase64 } from '@/lib/api'; 
+
+const MAX_SIZE_BYTES = 1 * 1024 * 1024; // 1MB
 
 export default function Home() {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
@@ -25,6 +27,15 @@ export default function Home() {
     setLoading(true);
     setError(null);
 
+    if(uploadedFile.size > MAX_SIZE_BYTES) {
+      const compressedFile: File | null = await compressImage(uploadedFile, MAX_SIZE_BYTES * 0.9)
+      if(!compressedFile) {
+        setError("Failed to compress image. Please try uploading a different image")
+        return;
+      }
+      setUploadedFile(compressedFile)
+    }
+
     try {
       const imageData = await fileToBase64(uploadedFile);
       const response = await ApiService.generateHaircuts({
@@ -33,7 +44,7 @@ export default function Home() {
       });
 
       if (response.success && response.variations.length > 0) {
-        setResult(response.variations[0]); // Take the first (and only) result
+        setResult(response.variations[0]); // take the first (and only) result
       } else {
         setError(response.message || 'Failed to generate reference image');
       }
