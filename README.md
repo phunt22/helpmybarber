@@ -19,7 +19,7 @@ Open `http://localhost:3000` and upload a photo to get AI haircut suggestions.
 
 ## Setup
 
-1. Get a [Gemini API key](https://aistudio.google.com/)
+1. Get a [Gemini API key](https://aistudio.google.com/apikey)
 2. Create `backend/.env`:
    ```
    GEMINI_API_KEY=your_key_here
