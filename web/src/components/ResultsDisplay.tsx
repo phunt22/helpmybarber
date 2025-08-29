@@ -165,6 +165,11 @@ export default function ResultsDisplay({ result, loading }: ResultsDisplayProps)
               >
                 Download
               </a>
+              <a
+                onClick={() => window.location.reload()}
+              >
+                Generate angles
+              </a>
             </div>
           </>
         ) : (
