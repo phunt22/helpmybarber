@@ -22,8 +22,8 @@ async fn main() {
         .route("/api/generate", post({
             move |body| generate_haircut_image(body)
         }))
+        .layer(DefaultBodyLimit::max(3 * 1024 * 1024)) // 3MB, output images generally are 2MB
         .layer(CorsLayer::permissive());
-        .layer(DefaultBodyLimit::max(3 * 1024 * 1024)) // 3MB
 
     let port = std::env::var("PORT")
         .unwrap_or_else(|_| "3001".to_string())

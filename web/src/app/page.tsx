@@ -6,7 +6,7 @@ import ResultsDisplay from '@/components/ResultsDisplay';
 import { ApiService } from '@/lib/api'; 
 import {fileToBase64, compressImage} from '@/utils/imageCompression'
 
-const MAX_SIZE_BYTES = 1 * 1024 * 1024; // 1MB
+const MAX_SIZE_BYTES = 0.5 * 1024 * 1024; // .5MB
 
 export default function Home() {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
@@ -16,35 +16,51 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
 
   const handleImageUpload = (imageDataUrl: string, file: File) => {
+    // TODO support heic images
+    if (file.name.toLowerCase().endsWith('heic') || file.name.toLowerCase().endsWith('heif')) {
+      setError("HEIC images are not supported. Please convert to jpg or png")
+      return;
+    }
+
     setUploadedImage(imageDataUrl);
     setUploadedFile(file);
     setResult(null);
     setError(null);
   };
 
-    const handleGenerateReference = async (prompt: string) => {
+  const handleGenerateReference = async (prompt: string) => {
     if (!uploadedFile) return;
-
-    // TODO support heic images
-    if (uploadedFile.name.toLowerCase().endsWith('heic') || uploadedFile.name.toLowerCase().endsWith('heif')) {
-      setError("HEIC images are not supported. Please convert to jpg or png")
-      return;
-    }
-
     setLoading(true);
     setError(null);
 
+    console.log('original size', uploadedFile.size)
+
+    let fileToProcess = uploadedFile;
+
     if(uploadedFile.size > MAX_SIZE_BYTES) {
-      const compressedFile: File | null = await compressImage(uploadedFile, MAX_SIZE_BYTES * 0.9)
-      if(!compressedFile) {
-        setError("Failed to compress image. Please try uploading a different image")
+      console.log('compressing...')
+      try {
+        const compressedFile: File | null = await compressImage(uploadedFile, MAX_SIZE_BYTES * 0.9)
+
+        if (!compressedFile) {
+          setLoading(false)
+          setLoading(false)
+          return;
+        }
+
+        fileToProcess = compressedFile
+        setUploadedFile(fileToProcess)
+      } catch(e: unknown) {
+        setError(`Image compression failed!, ${e instanceof Error ? e.message : String(e)}`)
+        setLoading(false)
         return;
-      }
-      setUploadedFile(compressedFile)
+      }       
     }
 
+    console.log('second size', fileToProcess.size)
+
     try {
-      const imageData = await fileToBase64(uploadedFile);
+      const imageData = await fileToBase64(fileToProcess);
       const response = await ApiService.generateHaircuts({
         prompt,
         imageData,

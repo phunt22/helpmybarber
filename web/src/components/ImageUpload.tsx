@@ -84,7 +84,7 @@ export default function ImageUpload({ onImageUpload }: ImageUploadProps) {
         </button>
         
         <p style={{ marginTop: '15px', fontSize: '14px', color: '#999' }}>
-          Supports JPG, PNG, GIF up to 10MB
+          Supports JPG and PNG
         </p>
       </div>
     </div>
