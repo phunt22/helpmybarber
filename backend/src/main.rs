@@ -23,6 +23,7 @@ async fn main() {
             move |body| generate_haircut_image(body)
         }))
         .layer(CorsLayer::permissive());
+        .layer(DefaultBodyLimit::max(3 * 1024 * 1024)) // 3MB
 
     let port = std::env::var("PORT")
         .unwrap_or_else(|_| "3001".to_string())

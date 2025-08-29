@@ -25,6 +25,12 @@ export default function Home() {
     const handleGenerateReference = async (prompt: string) => {
     if (!uploadedFile) return;
 
+    // TODO support heic images
+    if (uploadedFile.name.toLowerCase().endsWith('heic') || uploadedFile.name.toLowerCase().endsWith('heif')) {
+      setError("HEIC images are not supported. Please convert to jpg or png")
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
