@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import ImageUpload from '@/components/ImageUpload';
 import ResultsDisplay from '@/components/ResultsDisplay';
-import { ApiService, compressImage, fileToBase64 } from '@/lib/api'; 
+import { ApiService } from '@/lib/api'; 
+import {fileToBase64, compressImage} from '@/utils/imageCompression'
 
 const MAX_SIZE_BYTES = 1 * 1024 * 1024; // 1MB
 
