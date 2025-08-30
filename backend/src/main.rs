@@ -79,8 +79,7 @@ async fn generate_haircut_image(
 ) -> Result<Json<GenerateResponse>, (StatusCode, Json<GenerateResponse>)> {
     let image_data = match general_purpose::STANDARD.decode(&request.image_data) {
         Ok(data) => data,
-        Err(e) => {
-            eprintln!("Invalid image data: {}", e);
+        Err(_) => {
             return Err((
                 StatusCode::BAD_REQUEST,
                 Json(GenerateResponse {
@@ -99,8 +98,7 @@ async fn generate_haircut_image(
         &prompts,
     ).await {
         Ok(variations) => variations,
-        Err(error) => {
-            eprintln!("Gemini API error: {}", error);
+        Err(_) => {
             return Err((
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(GenerateResponse {

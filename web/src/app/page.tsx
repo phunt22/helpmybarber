@@ -75,7 +75,6 @@ export default function Home() {
         setError(response.message || 'Failed to generate reference image');
       }
     } catch (error) {
-      console.error('Error generating reference image:', error);
       setError('Failed to generate reference image. Please try again.');
     } finally {
       setLoading(false);
@@ -102,7 +101,6 @@ export default function Home() {
         setError(response.message || 'Failed to generate angle images');
       }
     } catch (error) {
-      console.error('Error generating angle images:', error);
       setError('Failed to generate angle images. Please try again.');
     } finally {
       setAnglesLoading(false);
@@ -122,9 +120,16 @@ export default function Home() {
 
   return (
     <div className="container">
-      <header className="text-center" style={{ marginBottom: '40px' }}>
-        <h1 style={{ fontSize: '2.5rem', marginBottom: '10px' }}>Help My Barber</h1>
-        <p>Upload your photo to get a haircut reference image</p>
+      <header className="text-center" style={{ marginBottom: '1.5rem' }}>
+        <h1>Help My Barber</h1>
+        <p style={{ 
+          fontSize: '1rem', 
+          color: 'var(--gray-600)', 
+          maxWidth: '600px', 
+          margin: '0 auto'
+        }}>
+         AI-generated reference images for your next haircut
+        </p>
       </header>
 
       {error && (
@@ -139,20 +144,26 @@ export default function Home() {
         <div className="grid grid-two-cols">
           <div>
             <div className="card">
-              <h3>Original Photo</h3>
-              <div style={{ marginTop: '20px', position: 'relative' }}>
-                <img
-                  src={uploadedImage}
-                  alt="Original photo"
-                  style={{
-                    width: '100%',
-                    maxHeight: '400px',
-                    borderRadius: '8px',
-                    objectFit: 'contain',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                    marginBottom: '15px'
-                  }}
-                />
+              <h3>Your Photo</h3>
+              <div style={{ marginTop: '1rem', position: 'relative' }}>
+                <div style={{
+                  position: 'relative',
+                  borderRadius: 'var(--radius-lg)',
+                  overflow: 'hidden',
+
+                  marginBottom: '0.75rem'
+                }}>
+                  <img
+                    src={uploadedImage}
+                    alt="Original photo"
+                    style={{
+                      width: '100%',
+                      maxHeight: '400px',
+                      objectFit: 'contain',
+                      display: 'block'
+                    }}
+                  />
+                </div>
                 <div style={{
                   display: 'flex',
                   justifyContent: 'center'
@@ -161,17 +172,8 @@ export default function Home() {
                     onClick={() => {
                       document.getElementById('change-photo-input')?.click();
                     }}
-                    style={{
-                      display: 'inline-block',
-                      padding: '8px 16px',
-                      backgroundColor: '#6c757d',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      cursor: 'pointer'
-                    }}
+                    className="btn btn-secondary"
+                    style={{ fontSize: '0.875rem' }}
                   >
                     Change Photo
                   </button>
@@ -196,8 +198,8 @@ export default function Home() {
               />
             </div>
 
-                        <div className="card">
-              <h3>Generate Reference Image</h3>
+            <div className="card">
+              <h3>Generate Reference</h3>
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -215,7 +217,7 @@ export default function Home() {
                     name="prompt"
                     type="text"
                     className="form-input"
-                    placeholder="Low taper fade"
+                    placeholder="Low taper fade with textured top"
                     required
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
@@ -227,15 +229,29 @@ export default function Home() {
                       }
                     }}
                   />
+                  <p style={{
+                    fontSize: '0.75rem',
+                    color: 'var(--gray-500)',
+                    marginTop: '0.5rem'
+                  }}>
+                    Be specific about the style, length, and any special details you want
+                  </p>
                 </div>
 
                 <button
                   type="submit"
                   disabled={loading}
                   className="btn"
-                  style={{ width: '100%' }}
+                  style={{ width: '100%', fontSize: '1rem', padding: '0.875rem' }}
                 >
-                  {loading ? 'Generating...' : 'Generate Reference Image'}
+                  {loading ? (
+                    <>
+                      <div className="loading"></div>
+                      Generating...
+                    </>
+                  ) : (
+                    'Generate Reference Image'
+                  )}
                 </button>
               </form>
             </div>

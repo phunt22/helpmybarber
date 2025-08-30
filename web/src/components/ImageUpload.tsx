@@ -54,14 +54,10 @@ export default function ImageUpload({ onImageUpload }: ImageUploadProps) {
   return (
     <div className="card">
       <div
-        className="upload-area"
+        className={`upload-area ${dragActive ? 'drag-active' : ''}`}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
-        style={{
-          borderColor: dragActive ? '#007bff' : '#ccc',
-          backgroundColor: dragActive ? '#f0f8ff' : 'transparent'
-        }}
       >
         <input
           ref={fileInputRef}
@@ -71,16 +67,31 @@ export default function ImageUpload({ onImageUpload }: ImageUploadProps) {
           style={{ display: 'none' }}
         />
         
-        <h3>Upload Your Photo</h3>
-        <p style={{ margin: '20px 0', color: '#666' }}>
-          Drag and drop your photo here, or click to select
+
+        
+        <h3 style={{ marginBottom: '0.75rem' }}>Upload Your Photo</h3>
+        <p style={{ 
+          margin: '0 0 1.5rem 0', 
+          color: 'var(--gray-500)',
+          fontSize: '1rem',
+          lineHeight: '1.6'
+        }}>
+          {dragActive 
+            ? 'Drop your photo here!' 
+            : 'Drag and drop your photo here, or click to browse'
+          }
         </p>
         
         <button
           onClick={() => fileInputRef.current?.click()}
           className="btn"
+          style={{ 
+            fontSize: '1rem',
+            padding: '0.875rem 1rem',
+            marginBottom: '1rem'
+          }}
         >
-          Choose Photo
+Choose Photo
         </button>
         
         <p style={{ marginTop: '15px', fontSize: '14px', color: '#999' }}>

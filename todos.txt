@@ -1,6 +1,6 @@
 - increase consistency between front, side, back views
    - generate them all together?
-- improve UI
+- improve UI––loading spinners on the generation side
 - handle edge cases like no people, harmful content, etc.
 - usage/error metrics
 - accounts, ability to save? 

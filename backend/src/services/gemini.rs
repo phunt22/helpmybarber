@@ -61,8 +61,7 @@ pub async fn generate_haircut_images(
     if !response.status().is_success() {
         let status = response.status();
         let error_text = response.text().await?;
-        eprintln!("Gemini API error ({}): {}", status, error_text.chars().take(100).collect::<String>());
-        return Err("API error".into());
+        return Err(format!("Gemini API error: {}", status).into());
     }
 
     let response_text = response.text().await?;
@@ -98,7 +97,6 @@ pub async fn generate_haircut_images(
     }
 
     if variations.is_empty() {
-        eprintln!("No images generated");
         return Err("No images generated".into());
     }
 
@@ -139,8 +137,7 @@ async fn generate_all_angles_together(
     if !response.status().is_success() {
         let status = response.status();
         let error_text = response.text().await?;
-        eprintln!("Gemini API error for all angles ({}): {}", status, error_text.chars().take(500).collect::<String>());
-        return Err("API error generating all angles".into());
+        return Err(format!("Gemini API error: {}", status).into());
     }
 
     let response_text = response.text().await?;

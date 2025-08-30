@@ -5,6 +5,13 @@ interface ImageVariation {
   angle: string;
 }
 
+interface LoadingItem {
+  angle: string;
+  loading: true;
+}
+
+type DisplayItem = ImageVariation | LoadingItem;
+
 interface ResultsDisplayProps {
   results: ImageVariation[];
   loading: boolean;
@@ -25,43 +32,42 @@ export default function ResultsDisplay({
   if (loading) {
     return (
       <div className="card">
-        <h3>Reference Image</h3>
+        <h3>Reference Images</h3>
         <div style={{
-          marginTop: '20px',
+          marginTop: '1rem',
           position: 'relative',
           width: '100%',
-          height: '400px',
-          backgroundColor: '#f0f0f0',
-          borderRadius: '8px',
+          height: '300px',
+          backgroundColor: 'var(--gray-50)',
+          borderRadius: 'var(--radius-lg)',
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexDirection: 'column'
+          alignItems: 'flex-start',
+          justifyContent: 'flex-start',
+          flexDirection: 'row',
+          border: '2px dashed var(--gray-300)',
+          padding: '1.5rem',
+          gap: '1rem'
         }}>
-          <div
-            style={{
-              width: '40px',
-              height: '40px',
-              border: '3px solid #e0e0e0',
-              borderTop: '3px solid #007bff',
-              borderRadius: '50%',
-              animation: 'spin 1s linear infinite',
-              marginBottom: '15px'
-            }}
-            className="loading-spinner"
-          ></div>
-          <span style={{ color: '#666', fontSize: '14px' }}>Generating reference image...</span>
-          <style dangerouslySetInnerHTML={{
-            __html: `
-              @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-              }
-              .loading-spinner {
-                animation: spin 1s linear infinite;
-              }
-            `
-          }} />
+          <div className="loading-lg" style={{ flexShrink: 0 }}></div>
+          <div>
+            <h4 style={{ 
+              color: 'var(--gray-600)', 
+              marginBottom: '0.5rem',
+              fontSize: '1rem',
+              textAlign: 'left',
+              margin: '0 0 0.5rem 0'
+            }}>
+              Creating your reference image...
+            </h4>
+            <p style={{ 
+              color: 'var(--gray-500)', 
+              fontSize: '0.875rem',
+              textAlign: 'left',
+              margin: '0'
+            }}>
+              This may take a few moments. We're analyzing your photo and generating the perfect haircut reference.
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -71,47 +77,98 @@ export default function ResultsDisplay({
     return (
       <div className="card">
         <h3>Reference Images</h3>
-        <p style={{ padding: '40px 0', textAlign: 'center', color: '#666' }}>
-          Fill out the form to generate your haircut reference image
-        </p>
+        <div style={{
+          padding: '2rem',
+          textAlign: 'center',
+          backgroundColor: 'var(--gray-50)',
+          borderRadius: 'var(--radius-lg)',
+          border: '2px dashed var(--gray-300)',
+          marginTop: '1rem'
+        }}>
+          <h4 style={{ 
+            color: 'var(--gray-600)',
+            marginBottom: '0.5rem',
+            textAlign: 'left'
+          }}>
+            Ready to Generate
+          </h4>
+          <p style={{ 
+            color: 'var(--gray-500)', 
+            fontSize: '0.875rem',
+            textAlign: 'left'
+          }}>
+            Upload your photo and describe your desired haircut to see AI-generated reference images
+          </p>
+        </div>
       </div>
     );
   }
 
+  // Create loading placeholders for angles being generated
+  const loadingAngles: LoadingItem[] = anglesLoading ? ['side', 'back'].map(angle => ({ angle, loading: true as const })) : [];
+  const allItems: DisplayItem[] = [...results, ...loadingAngles];
+
   return (
     <div className="card">
-      <h3>Haircut Reference Images</h3>
+      <h3>Your Reference Images</h3>
       
       <div style={{
-        marginTop: '20px',
+        marginTop: '1rem',
         display: 'grid',
-        gridTemplateColumns: results.length === 1 ? '1fr' : 'repeat(auto-fit, minmax(250px, 1fr))',
-        gap: '20px'
+        gridTemplateColumns: allItems.length === 1 ? '1fr' : 'repeat(auto-fit, minmax(350px, 1fr))',
+        gap: '1.5rem'
       }}>
-        {results.map((variation, index) => (
-          <div key={`${variation.angle}-${index}`} style={{ textAlign: 'center' }}>
+        {allItems.map((item, index) => (
+          <div key={`${item.angle}-${index}`} style={{ 
+            textAlign: 'center'
+          }}>
             <h4 style={{ 
-              margin: '0 0 10px 0', 
-              fontSize: '16px', 
+              margin: '0 0 0.75rem 0', 
+              fontSize: '1.125rem', 
               fontWeight: '600',
               textTransform: 'capitalize',
-              color: '#333'
+              color: 'var(--gray-800)'
             }}>
-              {variation.angle} View
+              {item.angle} View
             </h4>
             
-            {variation.image.startsWith('data:') ? (
+            {'loading' in item ? (
+              <div style={{
+                width: '100%',
+                height: '450px',
+                backgroundColor: 'var(--gray-50)',
+                borderRadius: 'var(--radius-lg)',
+                border: '2px dashed var(--gray-300)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexDirection: 'column',
+                gap: '1rem',
+                marginBottom: '0.75rem'
+              }}>
+                <div className="loading-lg"></div>
+                <p style={{ 
+                  color: 'var(--gray-500)', 
+                  fontSize: '0.875rem',
+                  margin: '0',
+                  textAlign: 'center'
+                }}>
+                  Generating {item.angle} view...
+                </p>
+              </div>
+            ) : 'image' in item && item.image.startsWith('data:') ? (
               <>
                 <img
-                  src={variation.image}
-                  alt={`${variation.angle} view haircut reference`}
+                  src={item.image}
+                  alt={`${item.angle} view haircut reference`}
                   style={{
                     width: '100%',
-                    maxHeight: '300px',
-                    borderRadius: '8px',
+                    maxHeight: '450px',
                     objectFit: 'contain',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                    marginBottom: '10px'
+                    display: 'block',
+                    backgroundColor: 'white',
+                    borderRadius: 'var(--radius-lg)',
+                    marginBottom: '0.75rem'
                   }}
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
@@ -123,14 +180,16 @@ export default function ResultsDisplay({
                           display: flex;
                           align-items: center;
                           justify-content: center;
-                          height: 300px;
-                          color: #666;
-                          font-size: 14px;
+                          height: 450px;
+                          color: var(--error-600);
+                          font-size: 0.875rem;
                           text-align: center;
-                          border: 1px solid #ddd;
-                          border-radius: 8px;
+                          border: 2px dashed var(--error-300);
+                          border-radius: var(--radius-lg);
+                          background: var(--error-50);
+                          margin-bottom: 1rem;
                         ">
-                          ❌ Failed to load ${variation.angle} image
+                          Failed to load ${item.angle} image
                         </div>
                       `;
                     }
@@ -139,24 +198,11 @@ export default function ResultsDisplay({
                 
                 <div style={{
                   display: 'flex',
-                  gap: '8px',
+                  gap: '0.5rem',
                   justifyContent: 'center',
                   flexWrap: 'wrap'
                 }}>
-                  <a
-                    href={variation.image}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      display: 'inline-block',
-                      padding: '6px 12px',
-                      backgroundColor: '#007bff',
-                      color: 'white',
-                      textDecoration: 'none',
-                      borderRadius: '4px',
-                      fontSize: '12px',
-                      fontWeight: '500'
-                    }}
+                  <button
                     onClick={(e) => {
                       e.preventDefault();
                       const newWindow = window.open('', '_blank', 'width=800,height=600');
@@ -164,55 +210,55 @@ export default function ResultsDisplay({
                         newWindow.document.write(`
                           <html>
                             <head>
-                              <title>${variation.angle} View - Haircut Reference</title>
                               <style>
-                                body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f8f9fa; }
-                                img { max-width: 100%; max-height: 100vh; object-fit: contain; }
+                                body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: var(--gray-100); }
+                                img { max-width: 100%; max-height: 100vh; object-fit: contain; border-radius: 8px; box-shadow: var(--shadow-lg); }
                               </style>
                             </head>
                             <body>
-                              <img src="${variation.image}" alt="${variation.angle} view haircut reference" />
+                              <img src="${item.image}" alt="${item.angle} view haircut reference" />
                             </body>
                           </html>
                         `);
                         newWindow.document.close();
                       }
                     }}
+                    className="btn btn-secondary"
+                    style={{ fontSize: '0.875rem', padding: '0.625rem 1rem' }}
                   >
                     View Full Size
-                  </a>
+                  </button>
                   <a
-                    href={variation.image}
-                    download={`haircut-${variation.angle}-view.jpg`}
-                    style={{
-                      display: 'inline-block',
-                      padding: '6px 12px',
-                      backgroundColor: '#28a745',
-                      color: 'white',
-                      textDecoration: 'none',
-                      borderRadius: '4px',
-                      fontSize: '12px',
-                      fontWeight: '500'
+                    href={item.image}
+                    download={`haircut-${item.angle}-view.jpg`}
+                    className="btn btn-success"
+                    style={{ 
+                      fontSize: '0.875rem', 
+                      padding: '0.625rem 1rem',
+                      textDecoration: 'none'
                     }}
                   >
                     Download
                   </a>
                 </div>
               </>
-            ) : (
+            ) : 'image' in item && (
               <div style={{
-                backgroundColor: '#f8f9fa',
-                borderRadius: '8px',
-                padding: '15px',
-                minHeight: '200px',
+                backgroundColor: 'var(--error-50)',
+                borderRadius: 'var(--radius-lg)',
+                padding: '2rem',
+                minHeight: '450px',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'center',
                 textAlign: 'center',
-                fontSize: '12px',
-                color: '#666'
+                fontSize: '0.875rem',
+                color: 'var(--error-600)',
+                border: '2px dashed var(--error-300)',
+                marginBottom: '1rem'
               }}>
-                {variation.image}
+                <div style={{ marginBottom: '0.5rem', fontWeight: '600' }}>Error</div>
+                <div>{item.image}</div>
               </div>
             )}
           </div>
@@ -220,28 +266,35 @@ export default function ResultsDisplay({
       </div>
 
       {hasFrontResult && !hasAngles && !anglesLoading && (
-        <div style={{ marginTop: '25px', textAlign: 'center', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
-          <p style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#666' }}>
-            Want to see side and back angles too?
+        <div style={{ 
+          marginTop: '1.5rem', 
+          textAlign: 'center', 
+          padding: '1.5rem', 
+          backgroundColor: 'var(--primary-50)', 
+          borderRadius: 'var(--radius-lg)',
+          border: '1px solid var(--primary-200)'
+        }}>
+          <h4 style={{ 
+            margin: '0 0 0.5rem 0', 
+            color: 'var(--gray-800)',
+            fontSize: '1rem'
+          }}>
+            Want More Angles?
+          </h4>
+          <p style={{ 
+            margin: '0 auto 1rem', 
+            fontSize: '0.875rem', 
+            color: 'var(--gray-600)',
+            maxWidth: '300px'
+          }}>
+            I think your barber would want the side and back views...
           </p>
           <button
             onClick={onGenerateAngles}
+            className="btn"
             style={{
-              padding: '8px 16px',
-              backgroundColor: '#17a2b8',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              fontSize: '14px',
-              fontWeight: '500',
-              cursor: 'pointer',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-            }}
-            onMouseOver={(e) => {
-              (e.target as HTMLButtonElement).style.backgroundColor = '#138496';
-            }}
-            onMouseOut={(e) => {
-              (e.target as HTMLButtonElement).style.backgroundColor = '#17a2b8';
+              backgroundColor: 'var(--warning-600)',
+              padding: '0.75rem 1.5rem'
             }}
           >
             Add Side & Back Views
@@ -251,38 +304,33 @@ export default function ResultsDisplay({
 
       {anglesLoading && (
         <div style={{
-          marginTop: '25px',
-          textAlign: 'center',
-          padding: '20px',
-          backgroundColor: '#f8f9fa',
-          borderRadius: '8px'
+          marginTop: '1.5rem',
+          padding: '1.5rem',
+          backgroundColor: 'var(--warning-50)',
+          borderRadius: 'var(--radius-lg)',
+          border: '1px solid var(--warning-200)',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: '1rem'
         }}>
-          <div
-            style={{
-              width: '30px',
-              height: '30px',
-              border: '3px solid #e0e0e0',
-              borderTop: '3px solid #17a2b8',
-              borderRadius: '50%',
-              animation: 'spin 1s linear infinite',
-              margin: '0 auto 10px'
-            }}
-            className="loading-spinner"
-          ></div>
-          <span style={{ color: '#666', fontSize: '14px' }}>
-            Generating side and back angle images...
-          </span>
-          <style dangerouslySetInnerHTML={{
-            __html: `
-              @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-              }
-              .loading-spinner {
-                animation: spin 1s linear infinite;
-              }
-            `
-          }} />
+          <div className="loading-lg" style={{ flexShrink: 0 }}></div>
+          <div>
+            <h4 style={{ 
+              color: 'var(--gray-800)', 
+              marginBottom: '0.5rem',
+              fontSize: '1rem',
+              margin: '0 0 0.5rem 0'
+            }}>
+              Adding More Angles...
+            </h4>
+            <p style={{ 
+              color: 'var(--gray-600)', 
+              fontSize: '0.875rem',
+              margin: '0'
+            }}>
+              Creating side and back view reference images
+            </p>
+          </div>
         </div>
       )}
     </div>

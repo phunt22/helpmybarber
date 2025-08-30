@@ -33,7 +33,6 @@ export const ApiService = {
             const data: GenerateHaircutsResponse = await response.json();
             return data;
         } catch (error) {
-            console.error('API request failed:', error);
             return {
                 success: false,
                 variations: [],
