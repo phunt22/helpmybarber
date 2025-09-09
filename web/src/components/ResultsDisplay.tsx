@@ -157,7 +157,12 @@ export default function ResultsDisplay({
                 </p>
               </div>
             ) : 'image' in item && item.image.startsWith('data:') ? (
-              <>
+              <div style={{
+                position: 'relative',
+                borderRadius: 'var(--radius-lg)',
+                overflow: 'hidden',
+                marginBottom: '0.75rem'
+              }}>
                 <img
                   src={item.image}
                   alt={`${item.angle} view haircut reference`}
@@ -166,9 +171,7 @@ export default function ResultsDisplay({
                     maxHeight: '450px',
                     objectFit: 'contain',
                     display: 'block',
-                    backgroundColor: 'white',
-                    borderRadius: 'var(--radius-lg)',
-                    marginBottom: '0.75rem'
+                    backgroundColor: 'white'
                   }}
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
@@ -195,13 +198,8 @@ export default function ResultsDisplay({
                     }
                   }}
                 />
-                
-                <div style={{
-                  display: 'flex',
-                  gap: '0.5rem',
-                  justifyContent: 'center',
-                  flexWrap: 'wrap'
-                }}>
+
+                <div className="image-overlay">
                   <button
                     onClick={(e) => {
                       e.preventDefault();
@@ -223,25 +221,30 @@ export default function ResultsDisplay({
                         newWindow.document.close();
                       }
                     }}
-                    className="btn btn-secondary"
-                    style={{ fontSize: '0.875rem', padding: '0.625rem 1rem' }}
+                    className="overlay-btn"
+                    title="View full size"
                   >
-                    View Full Size
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M15 3h6v6"/>
+                      <path d="M9 21H3v-6"/>
+                      <path d="M21 3l-7 7"/>
+                      <path d="M3 21l7-7"/>
+                    </svg>
                   </button>
                   <a
                     href={item.image}
                     download={`haircut-${item.angle}-view.jpg`}
-                    className="btn btn-success"
-                    style={{ 
-                      fontSize: '0.875rem', 
-                      padding: '0.625rem 1rem',
-                      textDecoration: 'none'
-                    }}
+                    className="overlay-btn"
+                    title="Download image"
                   >
-                    Download
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="7,10 12,15 17,10"/>
+                      <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
                   </a>
                 </div>
-              </>
+              </div>
             ) : 'image' in item && (
               <div style={{
                 backgroundColor: 'var(--error-50)',
@@ -266,26 +269,33 @@ export default function ResultsDisplay({
       </div>
 
       {hasFrontResult && !hasAngles && !anglesLoading && (
-        <div style={{ 
-          marginTop: '1.5rem', 
-          textAlign: 'center', 
-          padding: '1.5rem', 
-          backgroundColor: 'var(--primary-50)', 
+        <div style={{
+          marginTop: '2rem',
+          textAlign: 'center',
+          padding: '2rem',
+          backgroundColor: 'var(--primary-50)',
           borderRadius: 'var(--radius-lg)',
-          border: '1px solid var(--primary-200)'
+          border: '1px solid var(--primary-200)',
+          maxWidth: '600px',
+          marginLeft: 'auto',
+          marginRight: 'auto'
         }}>
-          <h4 style={{ 
-            margin: '0 0 0.5rem 0', 
+          <h4 style={{
+            margin: '0 0 1rem 0',
             color: 'var(--gray-800)',
-            fontSize: '1rem'
+            fontSize: '1.125rem',
+            fontWeight: '600'
           }}>
             Want More Angles?
           </h4>
-          <p style={{ 
-            margin: '0 auto 1rem', 
-            fontSize: '0.875rem', 
+          <p style={{
+            margin: '0 0 1.5rem 0',
+            fontSize: '0.875rem',
             color: 'var(--gray-600)',
-            maxWidth: '300px'
+            lineHeight: '1.6',
+            maxWidth: '500px',
+            marginLeft: 'auto',
+            marginRight: 'auto'
           }}>
             I think your barber would want the side and back views...
           </p>
@@ -293,44 +303,14 @@ export default function ResultsDisplay({
             onClick={onGenerateAngles}
             className="btn"
             style={{
-              backgroundColor: 'var(--warning-600)',
-              padding: '0.75rem 1.5rem'
+              backgroundColor: 'var(--primary-600)',
+              padding: '0.875rem 2rem',
+              fontSize: '0.95rem',
+              fontWeight: '500'
             }}
           >
             Add Side & Back Views
           </button>
-        </div>
-      )}
-
-      {anglesLoading && (
-        <div style={{
-          marginTop: '1.5rem',
-          padding: '1.5rem',
-          backgroundColor: 'var(--warning-50)',
-          borderRadius: 'var(--radius-lg)',
-          border: '1px solid var(--warning-200)',
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: '1rem'
-        }}>
-          <div className="loading-lg" style={{ flexShrink: 0 }}></div>
-          <div>
-            <h4 style={{ 
-              color: 'var(--gray-800)', 
-              marginBottom: '0.5rem',
-              fontSize: '1rem',
-              margin: '0 0 0.5rem 0'
-            }}>
-              Adding More Angles...
-            </h4>
-            <p style={{ 
-              color: 'var(--gray-600)', 
-              fontSize: '0.875rem',
-              margin: '0'
-            }}>
-              Creating side and back view reference images
-            </p>
-          </div>
         </div>
       )}
     </div>
