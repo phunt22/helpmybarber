@@ -42,6 +42,7 @@ export default function Home() {
       return;
     }
     if (!uploadedFile) return;
+
     setLoading(true);
     setError(null);
     setPrompt(promptText);
@@ -93,13 +94,6 @@ export default function Home() {
   const handleGenerateAngles = async () => {
     if (!uploadedFile || !prompt) return;
 
-    // Validate prompt before processing
-    const validationError = validatePrompt(prompt);
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
     setAnglesLoading(true);
     setError(null);
 
@@ -124,13 +118,6 @@ export default function Home() {
     }
   };
 
-
-
-
-
-
-
-
   // Check if we have front result and no angles yet
   const hasFrontResult = results.some(r => r.angle === 'front');
   const hasAngles = results.some(r => r.angle === 'side' || r.angle === 'back');
@@ -151,7 +138,9 @@ export default function Home() {
 
       {error && (
         <div className="error-message">
-          {error}
+          <p style={{ margin: 0, fontSize: '0.95rem' }}>
+            {error}
+          </p>
         </div>
       )}
 
