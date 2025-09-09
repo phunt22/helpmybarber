@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import ImageUpload from '@/components/ImageUpload';
 import ResultsDisplay from '@/components/ResultsDisplay';
-import { ApiService, ImageVariation } from '@/lib/api'; 
+import { ApiService, ImageVariation } from '@/lib/api';
 import {fileToBase64, compressImage} from '@/utils/imageCompression'
+import { validatePrompt } from '@/utils/validation'
 
 const MAX_SIZE_BYTES = 0.5 * 1024 * 1024; // .5MB
 
@@ -16,6 +17,7 @@ export default function Home() {
   const [anglesLoading, setAnglesLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [prompt, setPrompt] = useState<string>('');
+  const [promptLength, setPromptLength] = useState<number>(0);
 
   const handleImageUpload = (imageDataUrl: string, file: File) => {
     // TODO support heic images
@@ -31,7 +33,14 @@ export default function Home() {
     setPrompt('');
   };
 
+
   const handleGenerateReference = async (promptText: string) => {
+    // Validate prompt before processing
+    const validationError = validatePrompt(promptText);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
     if (!uploadedFile) return;
     setLoading(true);
     setError(null);
@@ -83,6 +92,14 @@ export default function Home() {
 
   const handleGenerateAngles = async () => {
     if (!uploadedFile || !prompt) return;
+
+    // Validate prompt before processing
+    const validationError = validatePrompt(prompt);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
     setAnglesLoading(true);
     setError(null);
 
@@ -219,6 +236,12 @@ export default function Home() {
                     className="form-input"
                     placeholder="Low taper fade with textured top"
                     required
+                    maxLength={500}
+                    value={prompt}
+                    onChange={(e) => {
+                      setPrompt(e.target.value);
+                      setPromptLength(e.target.value.length);
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
@@ -229,6 +252,24 @@ export default function Home() {
                       }
                     }}
                   />
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginTop: '0.5rem',
+                    fontSize: '0.75rem'
+                  }}>
+                    <span style={{
+                      color: promptLength > 450 ? 'var(--warning-600)' : 'var(--gray-500)'
+                    }}>
+                      {promptLength}/500 characters
+                    </span>
+                    {promptLength > 450 && (
+                      <span style={{ color: 'var(--warning-600)', fontWeight: '500' }}>
+                        Approaching limit
+                      </span>
+                    )}
+                  </div>
                   <p style={{
                     fontSize: '0.75rem',
                     color: 'var(--gray-500)',

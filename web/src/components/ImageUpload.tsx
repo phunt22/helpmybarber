@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { validateFile } from '@/utils/validation';
 
 interface ImageUploadProps {
   onImageUpload: (imageDataUrl: string, file: File) => void;
@@ -10,15 +11,24 @@ export default function ImageUpload({ onImageUpload }: ImageUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
 
+
   const handleFileSelect = (file: File) => {
-    if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        onImageUpload(result, file);
-      };
-      reader.readAsDataURL(file);
+    // Validate file before processing
+    const validationError = validateFile(file);
+    if (validationError) {
+      alert(validationError);
+      return;
     }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      onImageUpload(result, file);
+    };
+    reader.onerror = () => {
+      alert('Failed to read the selected file. Please try again.');
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleDrop = (e: React.DragEvent) => {
