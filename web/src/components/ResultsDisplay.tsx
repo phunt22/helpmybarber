@@ -1,3 +1,5 @@
+import Image from 'next/image';
+
 'use client';
 
 interface ImageVariation {
@@ -65,7 +67,7 @@ export default function ResultsDisplay({
               textAlign: 'left',
               margin: '0'
             }}>
-              This may take a few moments. We're analyzing your photo and generating the perfect haircut reference.
+              This may take a few moments. We&pos;re analyzing your photo and generating the perfect haircut reference.
             </p>
           </div>
         </div>
@@ -163,7 +165,7 @@ export default function ResultsDisplay({
                 overflow: 'hidden',
                 marginBottom: '0.75rem'
               }}>
-                <img
+                <Image
                   src={item.image}
                   alt={`${item.angle} view haircut reference`}
                   style={{

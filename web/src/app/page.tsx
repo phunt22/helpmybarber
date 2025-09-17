@@ -6,6 +6,7 @@ import ResultsDisplay from '@/components/ResultsDisplay';
 import { ApiService, ImageVariation } from '@/lib/api';
 import {fileToBase64, compressImage} from '@/utils/imageCompression'
 import { validatePrompt } from '@/utils/validation'
+import Image from 'next/image';
 
 const MAX_SIZE_BYTES = 0.5 * 1024 * 1024; // .5MB
 
@@ -84,7 +85,7 @@ export default function Home() {
       } else {
         setError(response.message || 'Failed to generate reference image');
       }
-    } catch (error) {
+    } catch {
       setError('Failed to generate reference image. Please try again.');
     } finally {
       setLoading(false);
@@ -159,7 +160,7 @@ export default function Home() {
 
                   marginBottom: '0.75rem'
                 }}>
-                  <img
+                  <Image
                     src={uploadedImage}
                     alt="Original photo"
                     style={{
