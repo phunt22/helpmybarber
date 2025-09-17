@@ -60,7 +60,7 @@ pub async fn generate_haircut_images(
 
     if !response.status().is_success() {
         let status = response.status();
-        let error_text = response.text().await?;
+        let _error_text = response.text().await?;
         return Err(format!("Gemini API error: {}", status).into());
     }
 
@@ -136,7 +136,7 @@ async fn generate_all_angles_together(
 
     if !response.status().is_success() {
         let status = response.status();
-        let error_text = response.text().await?;
+        let _error_text = response.text().await?;
         return Err(format!("Gemini API error: {}", status).into());
     }
 
