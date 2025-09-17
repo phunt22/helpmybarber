@@ -1,3 +1,7 @@
+[packages]
+openssl = "*"
+pkg-config = "*"
+
 [phases.build]
 cmds = ["cd backend && cargo build --release"]
 
