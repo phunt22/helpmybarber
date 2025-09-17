@@ -1,5 +1,5 @@
 [phases.build]
-cmds = ["cd backend", "cargo build --release"]
+cmds = ["cd backend && cargo build --release"]
 
 [phases.start]
 cmd = "cd backend && ./target/release/backend"
