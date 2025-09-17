@@ -1,8 +1,8 @@
-[providers]
-rust = "1.70"
-
 [phases.build]
-cmds = ["cd backend && cargo build --release"]
+cmds = ["cd backend", "cargo build --release"]
 
 [phases.start]
 cmd = "cd backend && ./target/release/backend"
+
+[variables]
+RUST_VERSION = "1.70"
