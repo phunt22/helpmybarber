@@ -136,7 +136,7 @@ async fn main() {
         .parse::<u16>()
         .unwrap_or(3001);
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
     println!("Server running on http://{}", addr);
 
     let listener = match tokio::net::TcpListener::bind(addr).await {
