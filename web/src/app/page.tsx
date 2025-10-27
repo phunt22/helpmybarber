@@ -112,7 +112,7 @@ export default function Home() {
       } else {
         setError(response.message || 'Failed to generate angle images');
       }
-    } catch (error) {
+    } catch {
       setError('Failed to generate angle images. Please try again.');
     } finally {
       setAnglesLoading(false);
