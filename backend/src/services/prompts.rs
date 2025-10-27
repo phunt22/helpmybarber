@@ -1,5 +1,5 @@
-use std::fs;
 use serde::Deserialize;
+use std::fs;
 
 #[derive(Debug, Deserialize)]
 struct PromptTemplate {
@@ -24,14 +24,16 @@ impl Prompts {
     }
 
     pub fn front_view(&self, haircut_description: &str) -> String {
-        self.config.front_view.template
+        self.config
+            .front_view
+            .template
             .replace("{haircut}", haircut_description)
     }
 
     pub fn side_and_back_views(&self, haircut_description: &str) -> String {
-        self.config.side_and_back_views.template
+        self.config
+            .side_and_back_views
+            .template
             .replace("{haircut}", haircut_description)
     }
-
-
 }

@@ -8,11 +8,13 @@ toml = "0.8"
 serde = { version = "1.0", features = ["derive"] }
 axum = { version = "0.8.4", features = ["multipart"] }
 tokio = { version = "1.47.1", features = ["full"] }
-tower-http = { version = "0.5", features = ["cors"] }
+tower-http = { version = "0.5", features = ["cors", "trace"] }
 reqwest = { version = "0.12", features = ["json", "multipart", "rustls-tls"], default-features = false }
 serde_json = "1.0"
 base64 = "0.22"
 dotenv = "0.15"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
 
 [dev-dependencies]
 tokio-test = "0.4"

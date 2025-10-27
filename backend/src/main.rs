@@ -1,16 +1,18 @@
 use axum::{
-    extract::{Json, DefaultBodyLimit, ConnectInfo},
+    extract::{connect_info::IntoMakeServiceWithConnectInfo, ConnectInfo, DefaultBodyLimit, Json},
     http::StatusCode,
     routing::{get, post},
     Router,
 };
+use base64::{engine::general_purpose, Engine as _};
 use serde::{Deserialize, Serialize};
-use tower_http::cors::CorsLayer;
-use std::net::SocketAddr;
 use std::collections::HashMap;
+use std::net::SocketAddr;
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
-use base64::{Engine as _, engine::general_purpose};
+use tower_http::{cors::CorsLayer, trace::TraceLayer};
+use tracing::{error, info, warn};
+use tracing_subscriber::EnvFilter;
 
 // Simple in-memory rate limiter
 type RateLimitStore = Mutex<HashMap<String, Vec<u64>>>;
@@ -22,7 +24,10 @@ fn get_rate_limit_key(ip: &std::net::IpAddr) -> String {
 fn check_rate_limit(store: &RateLimitStore, ip: &std::net::IpAddr) -> bool {
     let key = get_rate_limit_key(ip);
     let mut store = store.lock().unwrap();
-    let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
 
     // Clean up old entries (older than 60 seconds)
     let entries = store.entry(key.clone()).or_insert_with(Vec::new);
@@ -66,7 +71,16 @@ fn validate_prompt(prompt: &str) -> Result<(), String> {
 
     // Basic content filtering - reject obviously malicious prompts
     let lower_prompt = prompt.to_lowercase();
-    let blocked_words = ["script", "javascript", "html", "css", "<", ">", "http", "www"];
+    let blocked_words = [
+        "script",
+        "javascript",
+        "html",
+        "css",
+        "<",
+        ">",
+        "http",
+        "www",
+    ];
 
     for word in blocked_words {
         if lower_prompt.contains(word) {
@@ -103,6 +117,14 @@ async fn main() {
     // Load environment variables from .env file
     dotenv::dotenv().ok();
 
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+        )
+        .with_target(false)
+        .compact()
+        .init();
+
     let prompts = Arc::new(Prompts::load().expect("Failed to load prompts.toml"));
     let rate_limit_store = Arc::new(RateLimitStore::new(HashMap::new()));
 
@@ -113,8 +135,15 @@ async fn main() {
             let prompts_clone = Arc::clone(&prompts);
             let rate_limit_clone = Arc::clone(&rate_limit_store);
             move |ConnectInfo(addr): ConnectInfo<SocketAddr>, body: Json<GenerateRequest>| async move {
+                info!(
+                    client_ip = %addr.ip(),
+                    generate_angles = body.generate_angles,
+                    prompt_len = body.prompt.len(),
+                    "Incoming /api/generate request"
+                );
                 // Check rate limit
                 if !check_rate_limit(&rate_limit_clone, &addr.ip()) {
+                    warn!(client_ip = %addr.ip(), "Rate limit exceeded for IP");
                     return Err((
                         StatusCode::TOO_MANY_REQUESTS,
                         Json(GenerateResponse {
@@ -129,7 +158,8 @@ async fn main() {
             }
         }))
         .layer(DefaultBodyLimit::max(3 * 1024 * 1024)) // 3MB, output images generally are 2MB
-        .layer(CorsLayer::permissive());
+        .layer(CorsLayer::permissive())
+        .layer(TraceLayer::new_for_http());
 
     let port = std::env::var("PORT")
         .unwrap_or_else(|_| "3001".to_string())
@@ -147,7 +177,12 @@ async fn main() {
         }
     };
 
-    if let Err(e) = axum::serve(listener, app).await {
+    if let Err(e) = axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await
+    {
         eprintln!("Server error: {}", e);
     }
 }
@@ -162,6 +197,7 @@ async fn generate_haircut_image(
 ) -> Result<Json<GenerateResponse>, (StatusCode, Json<GenerateResponse>)> {
     // Validate inputs
     if let Err(msg) = validate_image_data(&request.image_data) {
+        warn!(reason = %msg, "Image data validation failed");
         return Err((
             StatusCode::BAD_REQUEST,
             Json(GenerateResponse {
@@ -173,6 +209,7 @@ async fn generate_haircut_image(
     }
 
     if let Err(msg) = validate_prompt(&request.prompt) {
+        warn!(reason = %msg, "Prompt validation failed");
         return Err((
             StatusCode::BAD_REQUEST,
             Json(GenerateResponse {
@@ -186,6 +223,7 @@ async fn generate_haircut_image(
     let image_data = match general_purpose::STANDARD.decode(&request.image_data) {
         Ok(data) => data,
         Err(_) => {
+            warn!("Failed to decode base64 image data");
             return Err((
                 StatusCode::BAD_REQUEST,
                 Json(GenerateResponse {
@@ -197,14 +235,29 @@ async fn generate_haircut_image(
         }
     };
 
+    info!(
+        prompt_len = request.prompt.len(),
+        generate_angles = request.generate_angles,
+        "Invoking Gemini to generate haircut images"
+    );
+
     let image_variations = match services::gemini::generate_haircut_images(
         &request.prompt,
         &image_data,
         request.generate_angles,
         &prompts,
-    ).await {
-        Ok(variations) => variations,
-        Err(_) => {
+    )
+    .await
+    {
+        Ok(variations) => {
+            info!(
+                count = variations.len(),
+                "Generated haircut image variations"
+            );
+            variations
+        }
+        Err(err) => {
+            error!(error = %err, "Gemini generation failed");
             return Err((
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(GenerateResponse {
@@ -306,7 +359,8 @@ mod tests {
             let old_timestamp = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
-                .as_secs() - 61;
+                .as_secs()
+                - 61;
             store_lock.insert(get_rate_limit_key(&ip), vec![old_timestamp; 10]);
         }
 
@@ -326,14 +380,20 @@ mod tests {
     fn test_validate_image_data_invalid_base64() {
         let invalid_base64 = create_invalid_base64();
         assert!(validate_image_data(&invalid_base64).is_err());
-        assert_eq!(validate_image_data(&invalid_base64).unwrap_err(), "Invalid image data format");
+        assert_eq!(
+            validate_image_data(&invalid_base64).unwrap_err(),
+            "Invalid image data format"
+        );
     }
 
     #[test]
     fn test_validate_image_data_too_large() {
         let large_base64 = create_valid_base64(10240); // ~10MB (should fail)
         assert!(validate_image_data(&large_base64).is_err());
-        assert_eq!(validate_image_data(&large_base64).unwrap_err(), "Image too large (max 10MB)");
+        assert_eq!(
+            validate_image_data(&large_base64).unwrap_err(),
+            "Image too large (max 10MB)"
+        );
     }
 
     #[test]
@@ -354,21 +414,30 @@ mod tests {
     fn test_validate_prompt_empty() {
         let empty_prompt = "";
         assert!(validate_prompt(empty_prompt).is_err());
-        assert_eq!(validate_prompt(empty_prompt).unwrap_err(), "Prompt cannot be empty");
+        assert_eq!(
+            validate_prompt(empty_prompt).unwrap_err(),
+            "Prompt cannot be empty"
+        );
     }
 
     #[test]
     fn test_validate_prompt_whitespace_only() {
         let whitespace_prompt = "   \n\t   ";
         assert!(validate_prompt(whitespace_prompt).is_err());
-        assert_eq!(validate_prompt(whitespace_prompt).unwrap_err(), "Prompt cannot be empty");
+        assert_eq!(
+            validate_prompt(whitespace_prompt).unwrap_err(),
+            "Prompt cannot be empty"
+        );
     }
 
     #[test]
     fn test_validate_prompt_too_long() {
         let long_prompt = "a".repeat(501);
         assert!(validate_prompt(&long_prompt).is_err());
-        assert_eq!(validate_prompt(&long_prompt).unwrap_err(), "Prompt too long (max 500 characters)");
+        assert_eq!(
+            validate_prompt(&long_prompt).unwrap_err(),
+            "Prompt too long (max 500 characters)"
+        );
     }
 
     #[test]
@@ -389,8 +458,15 @@ mod tests {
         ];
 
         for prompt in blocked_prompts {
-            assert!(validate_prompt(prompt).is_err(), "Prompt '{}' should be blocked", prompt);
-            assert_eq!(validate_prompt(prompt).unwrap_err(), "Prompt contains invalid content");
+            assert!(
+                validate_prompt(prompt).is_err(),
+                "Prompt '{}' should be blocked",
+                prompt
+            );
+            assert_eq!(
+                validate_prompt(prompt).unwrap_err(),
+                "Prompt contains invalid content"
+            );
         }
     }
 
@@ -398,7 +474,10 @@ mod tests {
     fn test_validate_prompt_case_insensitive() {
         let mixed_case_prompt = "I want a JaVaScRiPt haircut";
         assert!(validate_prompt(mixed_case_prompt).is_err());
-        assert_eq!(validate_prompt(mixed_case_prompt).unwrap_err(), "Prompt contains invalid content");
+        assert_eq!(
+            validate_prompt(mixed_case_prompt).unwrap_err(),
+            "Prompt contains invalid content"
+        );
     }
 
     #[test]
@@ -412,7 +491,11 @@ mod tests {
         ];
 
         for prompt in allowed_prompts {
-            assert!(validate_prompt(prompt).is_ok(), "Prompt '{}' should be allowed", prompt);
+            assert!(
+                validate_prompt(prompt).is_ok(),
+                "Prompt '{}' should be allowed",
+                prompt
+            );
         }
     }
 

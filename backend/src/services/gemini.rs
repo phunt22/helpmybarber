@@ -1,16 +1,16 @@
-use std::error::Error;
-use reqwest;
-use base64::{Engine as _, engine::general_purpose};
-use serde::Serialize;
 use crate::services::prompts::Prompts;
+use base64::{engine::general_purpose, Engine as _};
+use reqwest;
+use serde::Serialize;
+use std::error::Error;
 use std::sync::Arc;
+use tracing::{error, info};
 
 #[derive(Debug, Serialize)]
 pub struct ImageVariation {
     pub image: String,
     pub angle: String, // "front", "side", or "back"
 }
-
 
 const URL: &str = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent";
 
@@ -24,6 +24,12 @@ pub async fn generate_haircut_images(
         .map_err(|_| "GEMINI_API_KEY environment variable not set")?;
 
     let base64_image = general_purpose::STANDARD.encode(image_data);
+
+    info!(
+        generate_angles,
+        prompt_len = prompt.len(),
+        "Calling Gemini generate_haircut_images"
+    );
 
     if generate_angles {
         return generate_all_angles_together(prompt, &base64_image, &api_key, prompts).await;
@@ -60,14 +66,22 @@ pub async fn generate_haircut_images(
 
     if !response.status().is_success() {
         let status = response.status();
-        let _error_text = response.text().await?;
-        return Err(format!("Gemini API error: {}", status).into());
+        let error_text = response
+            .text()
+            .await
+            .unwrap_or_else(|err| format!("Failed to read error body: {}", err));
+        error!(
+            %status,
+            body = %error_text,
+            "Gemini API error during front-view generation"
+        );
+        return Err(format!("Gemini API error: {} - {}", status, error_text).into());
     }
 
     let response_text = response.text().await?;
 
-    let gemini_response: serde_json::Value = serde_json::from_str(&response_text)
-        .map_err(|_| "JSON parse error")?;
+    let gemini_response: serde_json::Value =
+        serde_json::from_str(&response_text).map_err(|_| "JSON parse error")?;
 
     let mut variations = Vec::new();
 
@@ -82,7 +96,7 @@ pub async fn generate_haircut_images(
                     if let Some(inline_data) = part.get("inlineData") {
                         if let (Some(mime_type), Some(data)) = (
                             inline_data.get("mimeType").and_then(|v| v.as_str()),
-                            inline_data.get("data").and_then(|v| v.as_str())
+                            inline_data.get("data").and_then(|v| v.as_str()),
                         ) {
                             let data_url = format!("data:{};base64,{}", mime_type, data);
                             variations.push(ImageVariation {
@@ -97,13 +111,12 @@ pub async fn generate_haircut_images(
     }
 
     if variations.is_empty() {
+        error!("Gemini returned zero images for front view");
         return Err("No images generated".into());
     }
 
     Ok(variations)
 }
-
-
 
 async fn generate_all_angles_together(
     prompt: &str,
@@ -136,13 +149,21 @@ async fn generate_all_angles_together(
 
     if !response.status().is_success() {
         let status = response.status();
-        let _error_text = response.text().await?;
-        return Err(format!("Gemini API error: {}", status).into());
+        let error_text = response
+            .text()
+            .await
+            .unwrap_or_else(|err| format!("Failed to read error body: {}", err));
+        error!(
+            %status,
+            body = %error_text,
+            "Gemini API error during angle generation"
+        );
+        return Err(format!("Gemini API error: {} - {}", status, error_text).into());
     }
 
     let response_text = response.text().await?;
-    let gemini_response: serde_json::Value = serde_json::from_str(&response_text)
-        .map_err(|_| "JSON parse error")?;
+    let gemini_response: serde_json::Value =
+        serde_json::from_str(&response_text).map_err(|_| "JSON parse error")?;
 
     let mut all_variations = Vec::new();
 
@@ -160,7 +181,7 @@ async fn generate_all_angles_together(
                     if let Some(inline_data) = part.get("inlineData") {
                         if let (Some(mime_type), Some(data)) = (
                             inline_data.get("mimeType").and_then(|v| v.as_str()),
-                            inline_data.get("data").and_then(|v| v.as_str())
+                            inline_data.get("data").and_then(|v| v.as_str()),
                         ) {
                             let angle = match image_count {
                                 0 => "side",
@@ -187,9 +208,9 @@ async fn generate_all_angles_together(
     }
 
     if all_variations.is_empty() {
+        error!("Gemini returned zero images for side/back views");
         return Err("No angle images generated".into());
     }
 
     Ok(all_variations)
 }
-
