@@ -155,6 +155,8 @@ export default function Home() {
               <div style={{ marginTop: '1rem', position: 'relative' }}>
                 <div style={{
                   position: 'relative',
+                  width: '100%',
+                  height: '400px',
                   borderRadius: 'var(--radius-lg)',
                   overflow: 'hidden',
 
@@ -163,11 +165,11 @@ export default function Home() {
                   <Image
                     src={uploadedImage}
                     alt="Original photo"
+                    fill
+                    sizes="(max-width: 768px) 100vw, 400px"
                     style={{
-                      width: '100%',
-                      maxHeight: '400px',
                       objectFit: 'contain',
-                      display: 'block'
+                      backgroundColor: 'var(--gray-50)'
                     }}
                   />
                 </div>

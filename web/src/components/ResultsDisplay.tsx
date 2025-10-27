@@ -66,7 +66,7 @@ export default function ResultsDisplay({
               textAlign: 'left',
               margin: '0'
             }}>
-              This may take a few moments. We're analyzing your photo and generating the perfect haircut reference.
+              This may take a few moments. We&apos;re analyzing your photo and generating the perfect haircut reference.
             </p>
           </div>
         </div>
@@ -160,6 +160,8 @@ export default function ResultsDisplay({
             ) : 'image' in item && item.image.startsWith('data:') ? (
               <div style={{
                 position: 'relative',
+                width: '100%',
+                height: '450px',
                 borderRadius: 'var(--radius-lg)',
                 overflow: 'hidden',
                 marginBottom: '0.75rem'
@@ -167,11 +169,10 @@ export default function ResultsDisplay({
                 <Image
                   src={item.image}
                   alt={`${item.angle} view haircut reference`}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 450px"
                   style={{
-                    width: '100%',
-                    maxHeight: '450px',
                     objectFit: 'contain',
-                    display: 'block',
                     backgroundColor: 'white'
                   }}
                   onError={(e) => {
