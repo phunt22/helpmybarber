@@ -1,0 +1,10 @@
+providers = ["rust"]
+cacheDirectories = ["target"]
+
+[phases.build]
+cmds = [
+    "cargo build --release"
+]
+
+[start]
+cmd = "cargo run --release"
